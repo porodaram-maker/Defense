@@ -10,15 +10,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: zip 풀기
+      - name: 프로젝트 찾기
         run: |
-          ZIP=$(ls *.zip | head -n 1)
-          echo "찾은 파일: $ZIP"
-          unzip -o "$ZIP" -d unzipped
-          PROJ=$(dirname "$(find unzipped -name settings.gradle | head -n 1)")
+          echo "=== 저장소 파일 목록 ==="
+          find . -path ./.git -prune -o -type f -print | head -50
+          # 이미 풀린 프로젝트가 있으면 그걸 쓰고, 없으면 zip을 찾아서 푼다
+          SG=$(find . -path ./.git -prune -o -name settings.gradle -print | head -n 1)
+          if [ -z "$SG" ]; then
+            ZIP=$(find . -path ./.git -prune -o -iname "*.zip" -print | head -n 1)
+            if [ -z "$ZIP" ]; then echo "zip 파일을 못 찾았어요"; exit 1; fi
+            echo "찾은 zip: $ZIP"
+            unzip -o "$ZIP" -d unzipped
+            SG=$(find unzipped -name settings.gradle | head -n 1)
+          fi
+          if [ -z "$SG" ]; then echo "settings.gradle을 못 찾았어요"; exit 1; fi
+          PROJ=$(dirname "$SG")
+          echo "프로젝트 위치: $PROJ"
           echo "PROJ=$PROJ" >> $GITHUB_ENV
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
