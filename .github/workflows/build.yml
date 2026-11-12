@@ -12,15 +12,13 @@ jobs:
 
       - name: 프로젝트 찾기
         run: |
-          SG=$(find . -path ./.git -prune -o -name settings.gradle -print | head -n 1)
+          SG=$(find . -name settings.gradle | head -n 1)
           if [ -z "$SG" ]; then
-            ZIP=$(find . -path ./.git -prune -o -iname "*.zip" -print | head -n 1)
-            if [ -z "$ZIP" ]; then echo "zip 파일을 못 찾았어요"; exit 1; fi
+            ZIP=$(find . -iname "*.zip" | head -n 1)
             echo "찾은 zip: $ZIP"
             unzip -o "$ZIP" -d unzipped
             SG=$(find unzipped -name settings.gradle | head -n 1)
           fi
-          if [ -z "$SG" ]; then echo "settings.gradle을 못 찾았어요"; exit 1; fi
           PROJ=$(dirname "$SG")
           echo "프로젝트 위치: $PROJ"
           echo "PROJ=$PROJ" >> $GITHUB_ENV
@@ -30,7 +28,16 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: 안드로이드 SDK 준비 (서버에 이미 설치된 것 사용)
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: APK 빌드
         run: |
-          echo "SDK 위치: $ANDROID_HOME"
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /de
+          cd "$PROJ"
+          gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dotori-defense-apk
+          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/*.apk
