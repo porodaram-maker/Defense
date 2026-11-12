@@ -8,13 +8,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: 프로젝트 찾기
         run: |
-          echo "=== 저장소 파일 목록 ==="
-          find . -path ./.git -prune -o -type f -print | head -50
-          # 이미 풀린 프로젝트가 있으면 그걸 쓰고, 없으면 zip을 찾아서 푼다
           SG=$(find . -path ./.git -prune -o -name settings.gradle -print | head -n 1)
           if [ -z "$SG" ]; then
             ZIP=$(find . -path ./.git -prune -o -iname "*.zip" -print | head -n 1)
@@ -33,16 +30,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
-
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-
-      - name: APK 빌드
-        run: cd "$PROJ" && gradle assembleDebug --no-daemon
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dotori-defense-apk
-          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/*.apk
+      - name: 안드로이드 SDK 준비 (서버에 이미 설치된 것 사용)
+        run: |
+          echo "SDK 위치: $ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /de
