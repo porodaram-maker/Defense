@@ -1,0 +1,38 @@
+name: APK 빌드
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: zip 풀기
+        run: |
+          ZIP=$(ls *.zip | head -n 1)
+          echo "찾은 파일: $ZIP"
+          unzip -o "$ZIP" -d unzipped
+          PROJ=$(dirname "$(find unzipped -name settings.gradle | head -n 1)")
+          echo "PROJ=$PROJ" >> $GITHUB_ENV
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: APK 빌드
+        run: cd "$PROJ" && gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dotori-defense-apk
+          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/*.apk
